@@ -39,13 +39,16 @@ module RR
       @extenders.merge! extender
     end
     
-        
     # Dummy ActiveRecord descendant only used to create database connections.
-    # Dynamically create ActiveRecord-Base class to be able to connect to multiple different databases    
+    class DummyActiveRecord < ActiveRecord::Base
+    end
+
+    # The above created class is no longer suitable to connect to multiple databases in ruby 1.9.3 and activerecord 3.2.8
+    # Creating classes dynamically seems to work at least for ruby 1.9.3 and activerecord 3.2.8
     def self.create_and_inherit_from_activerecord_base
       Object.const_set("DummyActiveRecord_#{rand.to_s.split('.').last}",Class.new(ActiveRecord::Base))
     end
-    
+            
     # Creates an ActiveRecord database connection according to the provided +config+ connection hash.
     # Possible values of this parameter are described in ActiveRecord::Base#establish_connection.
     # The database connection is extended with the correct ConnectionExtenders module.
