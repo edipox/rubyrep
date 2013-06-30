@@ -191,6 +191,7 @@ module RR
         execute "SET search_path TO #{config[:schema_search_path] || 'public'}"
       end
 
+
       # *** Moneky patch***
       # Returns the column objects for the named table.
       # Fixes JRuby schema support
@@ -198,29 +199,48 @@ module RR
         jdbc_connection = @connection.connection # the actual JDBC DatabaseConnection
         @unquoted_schema ||= select_one("show search_path")['search_path']
 
+        unquoted_schemas = @unquoted_schema.split(", ")
         # check if table exists
-        table_results = jdbc_connection.meta_data.get_tables(
-          jdbc_connection.catalog,
-          @unquoted_schema,
-          table_name,
-          ["TABLE","VIEW","SYNONYM"].to_java(:string)
-        )
-        table_exists = table_results.next
+        #table_results = jdbc_connection.meta_data.get_tables(
+        #  jdbc_connection.catalog,
+        #  @unquoted_schema,
+        #  table_name,
+        #  ["TABLE","VIEW","SYNONYM"].to_java(:string)
+        #)
+        #puts "table_results", table_results.instance_variables.inspect      
+        #table_exists = table_results.next
+        #table_results.close
+
+        table_exists = false
+
+        #unquoted_schemas << ""
+        unquoted_schemas.reverse!
+        while ( not(unquoted_schemas.empty? || table_exists) ) do
+                selected_schema = unquoted_schemas.pop
+                table_results = jdbc_connection.meta_data.get_tables(
+                  jdbc_connection.catalog,
+                  selected_schema,
+                  table_name,
+                  ["TABLE","VIEW","SYNONYM"].to_java(:string)
+                )
+                table_exists = table_results.next
+                p selected_schema, table_exists
+        end
         table_results.close
         raise "table '#{table_name}' not found" unless table_exists
 
         # get ResultSet for columns of table
         column_results = jdbc_connection.meta_data.get_columns(
           jdbc_connection.catalog,
-          @unquoted_schema,
+          selected_schema,
           table_name,
           nil
         )
-        
+
         # create the Column objects
         columns = []
         while column_results.next
-          
+
           # generate type clause
           type_clause = column_results.get_string('TYPE_NAME')
           precision = column_results.get_int('COLUMN_SIZE')
@@ -239,9 +259,10 @@ module RR
           )
         end
         column_results.close
-        
+
         columns
       end if RUBY_PLATFORM =~ /java/
+
 
       # *** Monkey patch***
       # Returns the list of a table's column names, data types, and default values.
