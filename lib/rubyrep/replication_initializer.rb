@@ -193,19 +193,25 @@ module RR
     def ensure_activity_markers
       table_name = "#{options[:rep_prefix]}_running_flags"
       [:left, :right].each do |database|
+        puts "Checks in #{database} database, if the activity marker tables exist"
         connection = session.send(database)
         unless connection.tables.include? table_name
+          puts "false", "Creating #{table_name} table in #{database} database"
           silence_ddl_notices(database) do
             connection.create_table table_name
             connection.add_column table_name, :active, :integer
             connection.remove_column table_name, 'id'
           end
+          puts "done"
+        else
+          puts "true"
         end
       end
     end
 
     # Checks if the event log table already exists and creates it if necessary
     def ensure_event_log
+      puts "Checking if the event log table already exists (in left database) and creates it if necessary"
       create_event_log unless event_log_exists?
     end
 
@@ -213,6 +219,7 @@ module RR
     # if necessary
     def ensure_change_logs
       [:left, :right].each do |database|
+        puts "Checking in #{database} database, if the change log tables exists and creates them if necessary"
         create_change_log(database) unless change_log_exists?(database)
       end
     end
@@ -258,6 +265,7 @@ module RR
         configured_tables = configured_table_pairs.map {|table_pair| table_pair[database]}
         unconfigured_tables = session.send(database).tables - configured_tables
         unconfigured_tables.each do |table|
+          puts "Checking rubyrep trigger for '#{table}' unconfigured table in #{database} database"
           if trigger_exists?(database, table)
             drop_trigger(database, table)
             session.send(database).execute(
@@ -272,7 +280,10 @@ module RR
     # tables are created.
     def call_after_infrastructure_setup_handler
       handler = session.configuration.options[:after_infrastructure_setup]
-      handler.call(session) if handler
+      if handler
+        puts "Calling after_infrastructure_setup handler" 
+        handler.call(session)
+      end
     end
 
     # Prepares the database / tables for replication.
@@ -313,7 +324,7 @@ module RR
       end
 
       unless unsynced_table_specs.empty?
-        puts "Executing initial table syncs"
+        puts "Executing initial table syncs for #{unsynced_table_specs.inspect}"
         runner = SyncRunner.new
         runner.session = session
         runner.options = {:table_specs => unsynced_table_specs}

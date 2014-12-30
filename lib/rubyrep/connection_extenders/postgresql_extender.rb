@@ -188,7 +188,8 @@ module RR
 
       # Sets the schema search path as per configuration parameters
       def initialize_search_path
-        execute "SET search_path TO #{config[:schema_search_path] || 'public'}"
+        schema_search_path_from_config = config[:schema_search_path] || ['public']
+        execute "SET search_path TO #{schema_search_path_from_config.join(',')}"
       end
 
 
@@ -200,31 +201,19 @@ module RR
         @unquoted_schema ||= select_one("show search_path")['search_path']
 
         unquoted_schemas = @unquoted_schema.split(", ")
-        # check if table exists
-        #table_results = jdbc_connection.meta_data.get_tables(
-        #  jdbc_connection.catalog,
-        #  @unquoted_schema,
-        #  table_name,
-        #  ["TABLE","VIEW","SYNONYM"].to_java(:string)
-        #)
-        #puts "table_results", table_results.instance_variables.inspect      
-        #table_exists = table_results.next
-        #table_results.close
-
-        table_exists = false
-
-        #unquoted_schemas << ""
+        # check if table exists in ANY schema
         unquoted_schemas.reverse!
         while ( not(unquoted_schemas.empty? || table_exists) ) do
-                selected_schema = unquoted_schemas.pop
-                table_results = jdbc_connection.meta_data.get_tables(
-                  jdbc_connection.catalog,
-                  selected_schema,
-                  table_name,
-                  ["TABLE","VIEW","SYNONYM"].to_java(:string)
-                )
-                table_exists = table_results.next
-                p selected_schema, table_exists
+          puts "Checking if table '#{table_name}' exists in schema '#{selected_schema}'"
+          selected_schema = unquoted_schemas.pop
+          table_results = jdbc_connection.meta_data.get_tables(
+            jdbc_connection.catalog,
+            selected_schema,
+            table_name,
+            ["TABLE","VIEW","SYNONYM"].to_java(:string)
+          )
+          table_exists = table_results.next
+          puts "#{table_exists}"
         end
         table_results.close
         raise "table '#{table_name}' not found" unless table_exists
@@ -239,6 +228,7 @@ module RR
 
         # create the Column objects
         columns = []
+        puts "Creating columns with config: #{@config}"
         while column_results.next
 
           # generate type clause
@@ -249,6 +239,14 @@ module RR
             type_clause += "(#{precision}#{scale > 0 ? ",#{scale}" : ""})"
           end
 
+          verbose_options_for_column = {
+            "column_results.get_string('COLUMN_NAME')" => column_results.get_string('COLUMN_NAME'),
+            "column_results.get_string('COLUMN_DEF')" => column_results.get_string('COLUMN_DEF'),
+            "type_clause" => type_clause,
+            "column_results.get_string('IS_NULLABLE').strip == 'NO'" => (column_results.get_string('IS_NULLABLE').strip == "NO")
+          }
+
+          puts "Creating column with parameters: #{verbose_options_for_column.inspect}"
           # create column
           columns << ::ActiveRecord::ConnectionAdapters::JdbcColumn.new(
             @config,
