@@ -159,7 +159,11 @@ EOS
             clear_session
             RR.logger.debug 'RUNNER - Databases disconnected, a new one will be built when needed...'
           else
+            RR.logger.error("==================================")
             RR.logger.error("Exception caught: #{e}")
+            RR.logger.error(e.message)
+            RR.logger.error(e.backtrace.join("\n"))
+            RR.logger.error("===========#{Time.now}============")
           end
         end
         pause_replication
