@@ -68,7 +68,7 @@ module RR
         self.rows = connection.select_all query
         self.current_row_index = 0
       end
-      self.current_row_index < self.rows.to_a.size
+      self.current_row_index < self.rows.to_a.size # ActiveRecord::Result to array
     end
 
     # Returns the row as a column => value hash and moves the cursor to the next row.
