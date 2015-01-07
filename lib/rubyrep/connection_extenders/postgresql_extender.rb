@@ -189,6 +189,7 @@ module RR
       # Sets the schema search path as per configuration parameters
       def initialize_search_path
         schema_search_path_from_config = config[:schema_search_path] || ['public']
+        raise schema_search_path_from_config.inspect
         execute "SET search_path TO #{schema_search_path_from_config.join(',')}"
       end
 
