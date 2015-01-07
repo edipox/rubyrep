@@ -65,10 +65,10 @@ module RR
           end
         end
 
-        self.rows = connection.select_all query
+        self.rows = connection.select_all(query).to_a  # ActiveRecord::Result to array
         self.current_row_index = 0
       end
-      self.current_row_index < self.rows.to_a.size # ActiveRecord::Result to array
+      self.current_row_index < self.rows.size 
     end
 
     # Returns the row as a column => value hash and moves the cursor to the next row.
