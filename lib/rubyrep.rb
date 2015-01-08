@@ -62,7 +62,15 @@ module RR
   # defaults to INFO, but it can also be set via the RR_LOGLEVEL env variable.
   def self.logger
     @logger ||= begin
-      file  = (ENV['RR_LOGFILE'] && File.expand_path(ENV['RR_LOGFILE'])) || File.expand_path("replication.output")
+      
+      default_log_file = ENV['RR_LOGFILE'] || "replication.output"
+
+      $stdout.reopen(default_log_file, "w")
+      $stdout.sync = true
+      $stderr.reopen($stdout)
+
+      file  = (ENV['RR_LOGFILE'] && File.expand_path(ENV['RR_LOGFILE'])) || File.expand_path(default_log_file)
+      
       level = Logger::INFO
       
       if ENV['RR_LOGLEVEL']
