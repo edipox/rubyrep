@@ -57,12 +57,12 @@ require 'generate_runner'
 require 'noisy_connection'
 
 module RR
-  # Returns the logger used by RubyRep. It logs to STDOUT by default if
+  # Returns the logger used by RubyRep. It logs to replication.output by default if
   # nothing else is specified via the RR_LOGFILE env variable. The log level
   # defaults to INFO, but it can also be set via the RR_LOGLEVEL env variable.
   def self.logger
     @logger ||= begin
-      file  = (ENV['RR_LOGFILE'] && File.expand_path(ENV['RR_LOGFILE'])) || STDOUT
+      file  = (ENV['RR_LOGFILE'] && File.expand_path(ENV['RR_LOGFILE'])) || File.expand_path("replication.output")
       level = Logger::INFO
       
       if ENV['RR_LOGLEVEL']
