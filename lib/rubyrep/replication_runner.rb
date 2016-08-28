@@ -150,7 +150,7 @@ EOS
           @last_run_successfull = true
         rescue Exception => e
           # Check if it's a connection problem
-          if (e.is_a?(PG::Error) && e.to_s =~ %r/could not connect/) || e.to_s =~ %r/no connection to '(.*)' databases/
+          if (e.is_a?(PG::Error) && e.to_s =~ %r/could not connect/) || e.to_s =~ %r/no connection to '(.*)' database/
             if @last_run_successfull
               RR.logger.error 'RUNNER - Lost connection to one database, terminating session.'
               @last_run_successfull = false
